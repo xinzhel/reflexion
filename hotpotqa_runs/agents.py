@@ -58,10 +58,12 @@ class CoTAgent:
         self.question = question
         self.context = context
         self.key = key
+
         self.agent_prompt = agent_prompt
         self.reflect_prompt = reflect_prompt
         self.cot_examples = cot_examples 
         self.reflect_examples = reflect_examples
+        
         self.self_reflect_llm = self_reflect_llm
         self.action_llm = action_llm
         self.reflections: List[str] = []

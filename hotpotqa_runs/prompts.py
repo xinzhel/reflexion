@@ -18,7 +18,12 @@ Here are some examples:
 Relevant Context: {context}
 Question: {question}{scratchpad}"""
 
-COT_REFLECT_INSTRUCTION = """You are an advanced reasoning agent that can improve based on self refection. You will be given a previous reasoning trial in which you were given access to relevant context and a question to answer. You were unsuccessful in answering the question either because you guessed the wrong answer with Finish[<answer>] or there is a phrasing discrepancy with your provided answer and the answer key. In a few sentences, Diagnose a possible reason for failure or phrasing discrepancy and devise a new, concise, high level plan that aims to mitigate the same failure. Use complete sentences.  
+COT_REFLECT_INSTRUCTION = """You are an advanced reasoning agent that can improve based on self refection. \
+    You will be given a previous reasoning trial in which you were given access to relevant context and a question to answer. \
+    You were unsuccessful in answering the question either because you guessed the wrong answer with Finish[<answer>] or \
+    there is a phrasing discrepancy with your provided answer and the answer key. \
+    In a few sentences, Diagnose a possible reason for failure or phrasing discrepancy and devise a new, concise, high level plan that aims to mitigate the same failure. \
+    Use complete sentences.  
 Here are some examples:
 {examples}
 (END OF EXAMPLES)
@@ -44,6 +49,7 @@ cot_reflect_prompt = PromptTemplate(
                         template = COT_REFLECT_INSTRUCTION,
                         )
 
+# with {reflections}
 COT_SIMPLE_INSTRUCTION = """Solve a question answering task by having a Thought, then Finish with your answer. Thought can reason about the current situation. Finish[answer] returns the answer and finishes the task.
 Here are some examples:
 {examples}
@@ -52,6 +58,7 @@ Here are some examples:
 {context}
 Question: {question}{scratchpad}"""
 
+# with {reflections}
 COT_SIMPLE_AGENT_REFLECT_INSTRUCTION = """Solve a question answering task by having a Thought, then Finish with your answer. Thought can reason about the current situation. Finish[answer] returns the answer and finishes the task.
 Here are some examples:
 {examples}
@@ -61,6 +68,8 @@ Here are some examples:
 
 Question: {question}{scratchpad}"""
 
+# w.o. {reflections}
+# with Previous trial to generate reflections
 COT_SIMPLE_REFLECT_INSTRUCTION = """You are an advanced reasoning agent that can improve based on self refection. You will be given a previous reasoning trial in which you were given a question to answer. You were unsuccessful in answering the question either because you guessed the wrong answer with Finish[<answer>] or there is a phrasing discrepancy with your provided answer and the answer key. In a few sentences, Diagnose a possible reason for failure or phrasing discrepancy and devise a new, concise, high level plan that aims to mitigate the same failure. Use complete sentences.
 Here are some examples:
 {examples}
