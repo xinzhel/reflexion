@@ -58,15 +58,6 @@ Here are some examples:
 {context}
 Question: {question}{scratchpad}"""
 
-# with {reflections}
-COT_SIMPLE_AGENT_REFLECT_INSTRUCTION = """Solve a question answering task by having a Thought, then Finish with your answer. Thought can reason about the current situation. Finish[answer] returns the answer and finishes the task.
-Here are some examples:
-{examples}
-(END OF EXAMPLES)
-{context}
-{reflections}
-
-Question: {question}{scratchpad}"""
 
 # w.o. {reflections}
 # with Previous trial to generate reflections
@@ -87,7 +78,14 @@ cot_simple_agent_prompt = PromptTemplate(
 
 cot_simple_reflect_agent_prompt = PromptTemplate(
                         input_variables=["examples", "context", "reflections", "question", "scratchpad"],
-                        template = COT_SIMPLE_AGENT_REFLECT_INSTRUCTION,
+                        template = """Solve a question answering task by having a Thought, then Finish with your answer. \
+                            Thought can reason about the current situation. Finish[answer] returns the answer and finishes the task. \
+                            Here are some examples: \
+                            {examples} \
+                            (END OF EXAMPLES) \
+                            {context} \
+                            {reflections} \
+                            Question: {question}{scratchpad}""",
                         )
 
 cot_simple_reflect_prompt = PromptTemplate(

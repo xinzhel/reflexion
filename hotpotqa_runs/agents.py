@@ -1,22 +1,14 @@
 import re, string, os
-from typing import List, Union, Literal
+from typing import List
 from enum import Enum
 import tiktoken
-from langchain import OpenAI, Wikipedia
-from langchain.llms.base import BaseLLM
-from langchain.chat_models import ChatOpenAI
-from langchain.chat_models.base import BaseChatModel
-from langchain.schema import (
-    SystemMessage,
-    HumanMessage,
-    AIMessage,
-)
+from langchain import Wikipedia
 from langchain.agents.react.base import DocstoreExplorer
 from langchain.docstore.base import Docstore
 from langchain.prompts import PromptTemplate
 from llm import AnyOpenAILLM
 from prompts import reflect_prompt, react_agent_prompt, react_reflect_agent_prompt, REFLECTION_HEADER, LAST_TRIAL_HEADER, REFLECTION_AFTER_LAST_TRIAL_HEADER
-from prompts import cot_agent_prompt, cot_reflect_agent_prompt, cot_reflect_prompt, COT_INSTRUCTION, COT_REFLECT_INSTRUCTION
+from prompts import cot_reflect_agent_prompt, cot_reflect_prompt
 from fewshots import WEBTHINK_SIMPLE6, REFLECTIONS, COT, COT_REFLECT
 
 
@@ -38,8 +30,8 @@ class CoTAgent:
                     question: str,
                     context: str,
                     key: str,
-                    agent_prompt: PromptTemplate = cot_reflect_agent_prompt,
-                    reflect_prompt: PromptTemplate = cot_reflect_prompt,
+                    agent_prompt: PromptTemplate,
+                    reflect_prompt: PromptTemplate,
                     cot_examples: str = COT,
                     reflect_examples: str = COT_REFLECT,
                     self_reflect_llm: AnyOpenAILLM = AnyOpenAILLM(
@@ -83,12 +75,12 @@ class CoTAgent:
     def step(self) -> None:
         # Think
         self.scratchpad += f'\nThought:'
-        self.scratchpad += ' ' + self.prompt_agent()
+        self.scratchpad += format_step(self.action_llm(self._build_agent_prompt()))
         print(self.scratchpad.split('\n')[-1])
 
         # Act
         self.scratchpad += f'\nAction:'
-        action = self.prompt_agent()
+        action = format_step(self.action_llm(self._build_agent_prompt()))
         self.scratchpad += ' ' + action
         action_type, argument = parse_action(action)
         print(self.scratchpad.split('\n')[-1])  
@@ -129,9 +121,6 @@ class CoTAgent:
         
         self.scratchpad: str = ''
         self.finished = False
-
-    def prompt_agent(self) -> str:
-        return format_step(self.action_llm(self._build_agent_prompt()))
     
     def _build_agent_prompt(self) -> str:
         return self.agent_prompt.format(
@@ -193,19 +182,19 @@ class ReactAgent:
     def step(self) -> None:
         # Think
         self.scratchpad += f'\nThought {self.step_n}:'
-        self.scratchpad += ' ' + self.prompt_agent()
+        self.scratchpad += ' ' + format_step(self.llm(self._build_agent_prompt()))
         print(self.scratchpad.split('\n')[-1])
 
         # Act
         self.scratchpad += f'\nAction {self.step_n}:'
-        action = self.prompt_agent()
+        action = format_step(self.llm(self._build_agent_prompt()))
         self.scratchpad += ' ' + action
         action_type, argument = parse_action(action)
         print(self.scratchpad.split('\n')[-1])
 
         # Observe
         self.scratchpad += f'\nObservation {self.step_n}: '
-        
+    
         if action_type == 'Finish':
             self.answer = argument
             if self.is_correct():
@@ -235,9 +224,6 @@ class ReactAgent:
         print(self.scratchpad.split('\n')[-1])
 
         self.step_n += 1
-
-    def prompt_agent(self) -> str:
-        return format_step(self.llm(self._build_agent_prompt()))
     
     def _build_agent_prompt(self) -> str:
         return self.agent_prompt.format(
@@ -267,9 +253,9 @@ class ReactReflectAgent(ReactAgent):
     def __init__(self,
                  question: str,
                  key: str,
+                 agent_prompt: PromptTemplate,
+                 reflect_prompt: PromptTemplate,
                  max_steps: int = 6,
-                 agent_prompt: PromptTemplate = react_reflect_agent_prompt,
-                 reflect_prompt: PromptTemplate = reflect_prompt,
                  docstore: Docstore = Wikipedia(),
                  react_llm: AnyOpenAILLM = AnyOpenAILLM(
                                              temperature=0,

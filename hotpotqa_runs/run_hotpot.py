@@ -1,57 +1,24 @@
-# %% [markdown]
-# #### Notebook for running Chain-of-Thought with no supporting context experiments
-
-# %%
 import sys, os
 sys.path.append('/Users/xinzheli/git_repo/reflexion/hotpotqa_runs/')
 root = '../root/'
-from llm import AnyOpenAILLM
-model_name = 'gpt-3.5-turbo'
-deployment_id = None
-self_reflect_llm = AnyOpenAILLM(
-                        temperature=0,
-                        max_tokens=250,
-                        model_name=model_name,
-                        deployment_id=deployment_id,
-                        model_kwargs={"stop": "\n"},
-                        openai_api_key=os.environ['OPENAI_API_KEY'])
-
-# %%
+from llm import AnyOpenAILLM, chatgpt_llm
 from util import summarize_trial, log_trial, save_agents
 import joblib
 from agents import CoTAgent, ReflexionStrategy
-
-# %% [markdown]
-# #### Load the HotPotQA Sample
-
-# %%
-hotpot = joblib.load('data/hotpot-qa-distractor-sample.joblib').reset_index(drop = True)
-
-# %% [markdown]
-# #### Define the Reflexion Strategy
-
-# %%
-print(ReflexionStrategy.__doc__)
-
-# %%
+                    
+hotpot = joblib.load('hotpotqa_runs/data/hotpot-qa-distractor-sample.joblib').reset_index(drop = True)
+# print(ReflexionStrategy.__doc__)
+    # NONE: No reflection
+    # LAST_ATTEMPT: Use last reasoning trace in context 
+    # REFLEXION: Apply reflexion to the next reasoning trace 
+    # LAST_ATTEMPT_AND_REFLEXION: Use last reasoning trace in context and apply reflexion to the next reasoning trace 
 strategy: ReflexionStrategy = ReflexionStrategy.REFLEXION
 
-# %% [markdown]
-# #### Initialize a CoTAgent for each question
-
-# %%
 from prompts import cot_simple_reflect_agent_prompt, cot_simple_reflect_prompt, cot_simple_agent_prompt
 from fewshots import COTQA_SIMPLE6, COT_SIMPLE_REFLECTION
-
-
-# %%
 row = next(hotpot.iterrows())[1]
 COTQA_SIMPLE6.split('\n')
-
-# %%
 COT_SIMPLE_REFLECTION.split('\n')
-
-# %%
 
 agents = [CoTAgent(question = row['question'],
                    context = '',
@@ -60,16 +27,8 @@ agents = [CoTAgent(question = row['question'],
                    cot_examples = COTQA_SIMPLE6,
                    reflect_prompt = cot_simple_reflect_prompt,
                    reflect_examples = COT_SIMPLE_REFLECTION,
-                   self_reflect_llm=self_reflect_llm
-                      ) ]
-
-# %%
-strategy
-
-# %% [markdown]
-# #### Run `n` trials
-
-# %%
+                   self_reflect_llm=chatgpt_llm,
+                   action_llm=chatgpt_llm) ]
 n = 2
 trial = 0
 log = ''
@@ -83,10 +42,6 @@ for i in range(n):
     correct, incorrect = summarize_trial(agents)
     print(f'Finished Trial {trial}, Correct: {len(correct)}, Incorrect: {len(incorrect)}')
 
-# %% [markdown]
-# #### Save the result log
-
-# %%
 with open(os.path.join(root, 'CoT', 'no_context', strategy.value, f'{len(agents)}_questions_{trial}_trials.txt'), 'w') as f:
     f.write(log)
 save_agents(agents, os.path.join(root, 'CoT', 'no_context', strategy.value, 'agents'))
